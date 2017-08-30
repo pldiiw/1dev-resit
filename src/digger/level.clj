@@ -1,4 +1,5 @@
-(ns digger.level)
+(ns digger.level
+  (:require [utils.core :refer [indexed]]))
 
 ; :diamond :bag :dug :filled
 
@@ -28,3 +29,7 @@
                :dug " "
                "-")))
     (println)))
+
+(defn index-level [level]
+  (indexed (map indexed level)))
+
