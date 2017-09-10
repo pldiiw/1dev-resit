@@ -1,33 +1,35 @@
 (ns digger.level
+  (:refer-clojure :exclude [print])
   (:require [quil.core :as q]
             [utils.core :refer [indexed]]))
 
 ; :diamond :bag :dug :filled
 
-(defn create-level
+(defn create
   "Generate a new level with a specific width and height. Diamonds, bags and
   dug cells percetages are also specified and shouldn't total above 100,
   friendly advice."
-  [width height diamond-pct bag-pct dug-pct]
+  [[width height :as size] [diamond-pct bag-pct dug-pct :as percentages]]
   (let [diamonds (take diamond-pct (repeat :diamond))
         bags     (take bag-pct (repeat :bag))
         dugs     (take dug-pct (repeat :dug))
         filled   (take (- 100 diamond-pct bag-pct dug-pct) (repeat :filled))
         bucket   (concat diamonds bags dugs filled)]
-    (repeatedly height
-      (fn [] (repeatedly width #(conj #{} (rand-nth bucket)))))))
+    (vec (repeatedly
+          height
+          (fn [] (vec (repeatedly width #(conj #{} (rand-nth bucket)))))))))
 
-(defn print-level
+(defn print
   "Print the given level, with '*' as diamonds, 'O' as bags, a space as dug
   cells and '-' as undug cells."
   [level]
   (doseq [row level]
     (doseq [cell row]
-      (print (condp #(%1 %2) cell
+      (clojure.core/print (condp #(%1 %2) cell)
                :diamond "*"
                :bag "O"
                :dug " "
-               "-")))
+               "-"))
     (println)))
 
 (defn index-level [level]
@@ -74,9 +76,11 @@
      (let [[center-x center-y] (map #(+ %1 (/ %2 2)) [x y] cell-size)]
        (if (:bag cell) (apply q/ellipse center-x center-y (map #(/ % 2) cell-size)))))))
 
-(defn draw-level [level cell-size]
+(defn draw [level cell-size]
   (draw-filled level cell-size)
   (draw-dug level cell-size)
   (draw-diamonds level cell-size)
   (draw-bags level cell-size))
 
+(defn dig [level {x :x y :y}]
+  (update-in level [y x] #(conj (disj % :filled) :dug)))

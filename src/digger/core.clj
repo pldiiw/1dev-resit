@@ -3,7 +3,8 @@
   (:refer-clojure :exclude [update])
   (:require [quil.core :as q]
             [quil.middleware :as m]
-            [digger.level :refer [create-level draw-level]]))
+            [digger.level :as level]
+            [digger.player :as player]))
 
 (def size [640 400])
 (def level-size [20 20])
@@ -11,17 +12,27 @@
 
 (defn setup []
   (q/frame-rate 60)
-  {:level (create-level 20 20 1 3 10)})
+  {:level (level/create level-size [1 3 10])
+   :player (player/create [0 0] [60 60] 3)})
 
 (defn update [state]
-  state)
+  (-> state
+      (clojure.core/update
+       ,,
+       :level
+       #(level/dig % (select-keys (:player state) [:x :y])))))
 
 (defn draw [state]
   (q/background 0)
-  (draw-level (:level state) cell-size))
+  (level/draw (:level state) cell-size)
+  (player/draw (:player state) cell-size))
 
 (defn key-pressed [state event]
-  state)
+  (let [key (:key event)]
+    (clojure.core/update
+     state
+     :player
+     #(player/key-pressed % key level-size))))
 
 (defn -main [& args]
   (q/defsketch game
