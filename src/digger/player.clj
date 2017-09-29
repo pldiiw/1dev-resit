@@ -27,9 +27,8 @@
     (update player :x inc)
     player))
 
-(defn draw [{x :x y :y} [cw ch :as cell-size]]
-  (q/fill 255 0 0)
-  (apply q/ellipse (+ (* x cw) (/ cw 2)) (+ (* y ch) (/ ch 2)) cell-size))
+(defn draw [{x :x y :y} sprite [w h]]
+  (q/image sprite (* x w) (* y h)))
 
 (defn key-pressed [player key [level-width level-height]]
   (condp = key
@@ -39,3 +38,5 @@
    :q (left player)
    player))
 
+(defn check-hits [{x :x y :y} enemies-coords]
+  (count (filter #(and (= x (:x %)) (= y (:y %))) enemies-coords)))

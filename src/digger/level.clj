@@ -3,8 +3,6 @@
   (:require [quil.core :as q]
             [utils.core :refer [indexed]]))
 
-; :diamond :bag :dug :filled
-
 (defn create
   "Generate a new level with a specific width and height. Diamonds, bags and
   dug cells percetages are also specified and shouldn't total above 100,
@@ -17,7 +15,7 @@
         bucket   (concat diamonds bags dugs filled)]
     (vec (repeatedly
           height
-          (fn [] (vec (repeatedly width #(conj #{} (rand-nth bucket)))))))))
+          (fn [] (vec (repeatedly width #(disj (conj #{} (rand-nth bucket)) :filled))))))))
 
 (defn print
   "Print the given level, with '*' as diamonds, 'O' as bags, a space as dug
@@ -35,52 +33,28 @@
 (defn index-level [level]
   (indexed (map indexed level)))
 
-(defn draw-cells-via-fn [level cell-size cell-drawing-function]
+(defn draw
+  "Draw each cell and items of the level with its according sprite."
+  [level sprite-map [w h]]
   (doseq [[j row] (index-level level)]
     (doseq [[i cell] row]
-      (let [x (* i (first cell-size))
-            y (* j (last cell-size))]
-        (cell-drawing-function x y cell)))))
+      (let [x (* i w)
+            y (* j h)]
+        (q/image (:filled sprite-map) x y)
+        (doseq [item cell]
+          (q/image (item sprite-map) x y))))))
 
-(defn draw-filled [level cell-size]
-  (draw-cells-via-fn
-   level
-   cell-size
-   (fn [x y cell]
-     (q/fill 0)
-     (if (:filled cell) (apply q/rect x y cell-size)))))
+(defn dig
+  "Add a :dug keyword to cell at x y to mark it dug."
+  [level {x :x y :y}]
+  (update-in level [y x] #(conj % :dug)))
 
-(defn draw-dug [level cell-size]
-  (draw-cells-via-fn
-   level
-   cell-size
-   (fn [x y cell]
-     (q/fill 255)
-     (if (:dug cell) (apply q/rect x y cell-size)))))
+(defn items-at
+  "Retrieves the items located at x y"
+  [level {x :x y :y}]
+  (vec (disj (get-in level [y x]) :dug)))
 
-(defn draw-diamonds [level cell-size]
-  (draw-cells-via-fn
-   level
-   cell-size
-   (fn [x y cell]
-     (q/fill 0 0 255)
-     (let [[center-x center-y] (map #(+ %1 (/ %2 2)) [x y] cell-size)]
-       (if (:diamond cell) (apply q/ellipse center-x center-y (map #(/ % 2) cell-size)))))))
-
-(defn draw-bags [level cell-size]
-  (draw-cells-via-fn
-   level
-   cell-size
-   (fn [x y cell]
-     (q/fill 0 255 0)
-     (let [[center-x center-y] (map #(+ %1 (/ %2 2)) [x y] cell-size)]
-       (if (:bag cell) (apply q/ellipse center-x center-y (map #(/ % 2) cell-size)))))))
-
-(defn draw [level cell-size]
-  (draw-filled level cell-size)
-  (draw-dug level cell-size)
-  (draw-diamonds level cell-size)
-  (draw-bags level cell-size))
-
-(defn dig [level {x :x y :y}]
-  (update-in level [y x] #(conj (disj % :filled) :dug)))
+(defn cleanup
+  "Removes the items at x y"
+  [level {x :x y :y}]
+  (update-in level [y x] #(disj % :bag :diamond :cherry)))
